@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hogwarts Clothes Crossword</title>
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#3b2412; --parch:#f4e4bc; --parch-dark:#e2c98f; --gold:#8a6d1d; --burg:#6b1e1e; --cell:#fffaf0; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; font-family:"IM Fell English", Georgia, serif; color:var(--ink);
+    background: radial-gradient(ellipse at center, #f8edd0 0%, var(--parch) 55%, var(--parch-dark) 100%);
+    padding:24px 12px; }
+  .scroll { max-width:1100px; margin:0 auto; background:linear-gradient(180deg,#f7e9c4,#ecd7a0);
+    border:3px double var(--gold); border-radius:14px; box-shadow:0 8px 30px rgba(59,36,18,.35); padding:24px 20px 30px; position:relative; }
+  h1 { font-family:"UnifrakturMaguntia", "IM Fell English", serif; font-size:clamp(2rem,5vw,3.2rem); text-align:center; margin:0; color:var(--burg); text-shadow:1px 1px 0 #fff6d8; }
+  .sub { text-align:center; font-style:italic; margin:6px 0 18px; color:var(--ink); }
+  .crest { text-align:center; font-size:1.6rem; color:var(--gold); letter-spacing:.5em; }
+  .layout { display:flex; flex-wrap:wrap; gap:24px; justify-content:center; align-items:flex-start; }
+  .board { display:grid; gap:2px; background:var(--gold); padding:4px; border-radius:6px; border:2px solid var(--burg); }
+  .cell { position:relative; width:var(--sz,38px); height:var(--sz,38px); background:var(--cell); }
+  .cell.blank { background:transparent; border:none; }
+  .cell.on { background:var(--cell); }
+  .cell .num { position:absolute; top:1px; left:3px; font-size:10px; color:var(--burg); font-weight:bold; line-height:1; }
+  .cell input { width:100%; height:100%; border:none; background:transparent; text-align:center; font-family:"IM Fell English", Georgia, serif;
+    font-size:calc(var(--sz,38px) * .55); font-weight:bold; text-transform:uppercase; color:var(--ink); padding:0; outline:none; caret-color:var(--burg); }
+  .cell input:focus { background:#fde9a8; }
+  .cell input.ok { color:#1f6b2a; background:#d8f3cf; }
+  .cell input.bad { color:#8b1a1a; background:#f6cfcf; }
+  .clues { flex:1 1 320px; max-width:460px; }
+  .clues h2 { font-family:"UnifrakturMaguntia", serif; color:var(--burg); font-size:1.9rem; margin:6px 0 4px; border-bottom:1px solid var(--gold); }
+  .clues ol { list-style:none; padding:0; margin:0 0 14px; }
+  .clues li { margin:0 0 8px; line-height:1.3; font-size:1.05rem; cursor:pointer; padding:3px 6px; border-radius:4px; display:flex; align-items:center; gap:8px; }
+  .clues li:hover, .clues li.active { background:rgba(138,109,29,.18); }
+  .clues li b { color:var(--burg); min-width:1.6em; }
+  .clues li .emoji { font-size:2.1rem; line-height:1; filter:drop-shadow(1px 1px 0 #fff6d8); }
+  .clues li .len { font-style:italic; color:#6a5130; }
+  .controls { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:22px; }
+  button { font-family:"IM Fell English", Georgia, serif; font-size:1.05rem; padding:8px 18px; border-radius:8px; border:2px solid var(--gold);
+    background:linear-gradient(#7a2424,#5a1616); color:#fbe9b7; cursor:pointer; box-shadow:0 2px 0 #3b1010; }
+  button.alt { background:linear-gradient(#f7e7b8,#e7cf8c); color:var(--ink); }
+  button:hover { filter:brightness(1.08); }
+  #status { text-align:center; min-height:1.4em; margin-top:12px; font-style:italic; }
+  footer { text-align:center; font-size:.85rem; margin-top:14px; opacity:.8; }
+  @media (max-width:640px){ :root{ --sz:30px; } }
+  @media print {
+    body { background:#fff; padding:0; }
+    .scroll { box-shadow:none; border:2px solid #000; background:#fff; max-width:none; }
+    .controls, #status, footer { display:none !important; }
+    .cell input.ok, .cell input.bad { background:transparent; color:#000; }
+    .clues li:hover, .clues li.active { background:none; }
+    .clues li .emoji { filter:none; }
+    .layout { gap:12px; }
+    button { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="scroll">
+  <div class="crest">&#9733; &#9733; &#9733;</div>
+  <h1>Hogwarts Clothes Crossword</h1>
+  <p class="sub">Fill the parchment with the names of the clothes Hogwarts students wear and keep warm!</p>
+  <div class="layout">
+    <div>
+      <div id="board" class="board"></div>
+    </div>
+    <div class="clues">
+      <h2>Across</h2>
+      <ol id="across"></ol>
+      <h2>Down</h2>
+      <ol id="down"></ol>
+    </div>
+  </div>
+  <div class="controls">
+    <button id="check">Check my answers</button>
+    <button id="reveal" class="alt">Reveal answers</button>
+    <button id="clear" class="alt">Clear grid</button>
+    <button id="print" class="alt">Print puzzle</button>
+  </div>
+  <div id="status"></div>
+  <footer>Tip: click a clue to jump to its word. Type letters, use the arrow keys to move.</footer>
+</div>
+
+<script>
+const WORDS = [
+  { answer:"GLOVES", row:9,  col:1, dir:"A", clue:"\u{1F9E4}" },
+  { answer:"BOOT",   row:11, col:0, dir:"A", clue:"\u{1F462}" },
+  { answer:"SCARF",  row:7,  col:5, dir:"A", clue:"\u{1F9E3}" },
+  { answer:"PANTS",  row:2,  col:0, dir:"A", clue:"\u{1F456}" },
+  { answer:"DRESS",  row:5,  col:3, dir:"A", clue:"\u{1F457}" },
+  { answer:"COAT",   row:8,  col:3, dir:"D", clue:"\u{1F9E5}" },
+  { answer:"SOCKS",  row:5,  col:6, dir:"D", clue:"\u{1F9E6}" },
+  { answer:"CAP",    row:0,  col:0, dir:"D", clue:"\u{1F9E2}" },
+  { answer:"SHIRT",  row:2,  col:4, dir:"D", clue:"\u{1F455}" },
+  { answer:"HAT",    row:0,  col:3, dir:"D", clue:"\u{1F3A9}" }
+];
+const ROWS = 12, COLS = 10;
+
+const sol = Array.from({length:ROWS}, () => Array(COLS).fill(null));
+const conflicts = [];
+WORDS.forEach(w => {
+  [...w.answer].forEach((ch,i) => {
+    const r = w.dir==="A" ? w.row : w.row+i;
+    const c = w.dir==="A" ? w.col+i : w.col;
+    if (sol[r][c] && sol[r][c] !== ch) conflicts.push(`${w.answer} at ${r},${c}`);
+    sol[r][c] = ch;
+  });
+});
+if (conflicts.length) console.error("Intersection conflicts:", conflicts);
+
+const starts = {};
+WORDS.forEach(w => { const k = w.row+","+w.col; (starts[k] = starts[k] || []).push(w); });
+let n = 0; const numAt = {};
+for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
+  if (starts[r+","+c]) { n++; numAt[r+","+c] = n; starts[r+","+c].forEach(w => w.num = n); }
+}
+
+const board = document.getElementById("board");
+board.style.gridTemplateColumns = `repeat(${COLS}, var(--sz,38px))`;
+const inputs = [];
+for (let r=0;r<ROWS;r++) {
+  inputs.push([]);
+  for (let c=0;c<COLS;c++) {
+    const div = document.createElement("div");
+    if (!sol[r][c]) { div.className = "cell blank"; inputs[r].push(null); board.appendChild(div); continue; }
+    div.className = "cell on";
+    if (numAt[r+","+c]) { const s=document.createElement("span"); s.className="num"; s.textContent=numAt[r+","+c]; div.appendChild(s); }
+    const inp = document.createElement("input");
+    inp.maxLength = 1; inp.dataset.r = r; inp.dataset.c = c; inp.setAttribute("aria-label", `row ${r+1} column ${c+1}`);
+    inp.autocomplete = "off";
+    div.appendChild(inp); board.appendChild(div);
+    inputs[r].push(inp);
+  }
+}
+
+const acrossEl = document.getElementById("across"), downEl = document.getElementById("down");
+let activeWord = null;
+const sorted = [...WORDS].sort((a,b)=> a.num-b.num);
+function addClue(w, el) {
+  const li = document.createElement("li");
+  li.dataset.key = w.answer;
+  li.innerHTML = `<b>${w.num}.</b> <span class="emoji" role="img" aria-label="clue">${w.clue}</span> <span class="len">(${w.answer.length})</span>`;
+  li.addEventListener("click", () => focusWord(w));
+  el.appendChild(li);
+}
+sorted.filter(w=>w.dir==="A").forEach(w=>addClue(w, acrossEl));
+sorted.filter(w=>w.dir==="D").forEach(w=>addClue(w, downEl));
+
+function cellsOf(w) {
+  return [...w.answer].map((_,i)=> w.dir==="A" ? [w.row, w.col+i] : [w.row+i, w.col]);
+}
+function focusWord(w) {
+  activeWord = w;
+  document.querySelectorAll(".clues li").forEach(li=> li.classList.toggle("active", li.dataset.key===w.answer));
+  const [r,c] = cellsOf(w)[0];
+  inputs[r][c].focus();
+}
+function wordAt(r,c, preferDir) {
+  const hits = WORDS.filter(w => cellsOf(w).some(([a,b])=>a===r&&b===c));
+  return hits.find(w=>w.dir===preferDir) || hits[0] || null;
+}
+
+inputs.forEach((row,r)=> row.forEach((inp,c)=>{
+  if (!inp) return;
+  inp.addEventListener("focus", () => {
+    const w = (activeWord && cellsOf(activeWord).some(([a,b])=>a===r&&b===c)) ? activeWord : wordAt(r,c, activeWord?activeWord.dir:"A");
+    if (w) { activeWord = w; document.querySelectorAll(".clues li").forEach(li=> li.classList.toggle("active", li.dataset.key===w.answer)); }
+    inp.select();
+  });
+  inp.addEventListener("input", () => {
+    inp.value = inp.value.toUpperCase().replace(/[^A-Z]/g,"").slice(-1);
+    inp.classList.remove("ok","bad");
+    if (inp.value && activeWord) {
+      const cells = cellsOf(activeWord);
+      const idx = cells.findIndex(([a,b])=>a===r&&b===c);
+      if (idx>=0 && idx<cells.length-1) { const [nr,nc]=cells[idx+1]; inputs[nr][nc].focus(); }
+    }
+  });
+  inp.addEventListener("keydown", e => {
+    const moves = {ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowUp:[-1,0],ArrowDown:[1,0]};
+    if (e.key==="Backspace" && !inp.value && activeWord) {
+      const cells = cellsOf(activeWord);
+      const idx = cells.findIndex(([a,b])=>a===r&&b===c);
+      if (idx>0) { const [pr,pc]=cells[idx-1]; inputs[pr][pc].value=""; inputs[pr][pc].focus(); }
+      return;
+    }
+    if (moves[e.key]) {
+      e.preventDefault();
+      const [dr,dc]=moves[e.key];
+      let nr=r+dr, nc=c+dc;
+      while (nr>=0&&nr<ROWS&&nc>=0&&nc<COLS) {
+        if (inputs[nr][nc]) { inputs[nr][nc].focus(); break; }
+        nr+=dr; nc+=dc;
+      }
+    }
+  });
+}));
+
+function setStatus(msg){ document.getElementById("status").textContent = msg; }
+
+document.getElementById("check").addEventListener("click", () => {
+  let right=0, total=0, empty=0;
+  inputs.forEach((row,r)=> row.forEach((inp,c)=>{
+    if (!inp) return; total++;
+    inp.classList.remove("ok","bad");
+    if (!inp.value) { empty++; return; }
+    if (inp.value===sol[r][c]) { inp.classList.add("ok"); right++; }
+    else inp.classList.add("bad");
+  }));
+  if (right===total) setStatus("Wonderful! Every letter is correct. Five points to Gryffindor!");
+  else setStatus(`${right} of ${total} letters are correct${empty?` (${empty} still empty)`:""}. Keep going!`);
+});
+document.getElementById("reveal").addEventListener("click", () => {
+  inputs.forEach((row,r)=> row.forEach((inp,c)=>{ if(inp){ inp.value=sol[r][c]; inp.classList.remove("bad"); inp.classList.add("ok"); } }));
+  setStatus("Answers revealed. Better luck with the next spell!");
+});
+document.getElementById("clear").addEventListener("click", () => {
+  inputs.forEach(row=> row.forEach(inp=>{ if(inp){ inp.value=""; inp.classList.remove("ok","bad"); } }));
+  setStatus("Grid cleared. Ready for another try!");
+});
+document.getElementById("print").addEventListener("click", () => window.print());
+</script>
+</body>
+</html>
